@@ -1,5 +1,10 @@
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.charset.Charset;
+
 import javax.xml.bind.DatatypeConverter;
 
 public class AES {
@@ -143,14 +148,6 @@ public class AES {
 		return destination;
 	}
 
-	private static byte[] shiftNRow (int nthShift, byte[] row) {
-		for(int i = 0; i < nthShift; i++) {
-
-		}
-
-		return row;
-	}
-
 	private static byte[] shiftRows (byte[] state) {
 		byte[] temp = new byte[4];
 		for(int i = 1; i < 4; i++) {
@@ -191,7 +188,6 @@ public class AES {
 		// This is another alternate version of mixColumn, using the 
 		// logtables to do the computation.
 		byte[] temp = new byte[4];
-		System.out.println(temp[0]);
 
 		// This is exactly the same as mixColumns1, if 
 		// the mul columns somehow match the b columns there.
@@ -206,9 +202,31 @@ public class AES {
 		return word;
 	} // mixColumn2
 
-	private void invMixColumns () {
-		// TODO
+	private static byte[] invMixColumns (byte[] state) {
+		byte[] temp = new byte[4];
+
+		for (int i = 0; i < COLUMNS; i++) {
+			temp = getWord(i, state, temp);
+			temp = invMixColumn2(i, temp);
+			setWord(i, temp, state);
+		}
+
+		return state;
 	}
+
+	private static byte[] invMixColumn2 (int c, byte[] word) {
+		byte temp[] = new byte[4];
+
+		temp[0] = (byte)(mul(0xE,word[0]) ^ mul(0xB,word[1]) ^ mul(0xD, word[2]) ^ mul(0x9,word[3]));
+		temp[1] = (byte)(mul(0xE,word[1]) ^ mul(0xB,word[2]) ^ mul(0xD, word[3]) ^ mul(0x9,word[0]));
+		temp[2] = (byte)(mul(0xE,word[2]) ^ mul(0xB,word[3]) ^ mul(0xD, word[0]) ^ mul(0x9,word[1]));
+		temp[3] = (byte)(mul(0xE,word[3]) ^ mul(0xB,word[0]) ^ mul(0xD, word[1]) ^ mul(0x9,word[2]));
+
+		for (int i = 0; i < 4; i++) {
+			word[i] = temp[i];
+		}
+		return word;
+	} // invMixColumn2
 
 	private static byte[] addRoundkey (byte[] state, byte[] key, int round) {
 		byte[] sWord = new byte[4];
@@ -282,7 +300,7 @@ public class AES {
 	private static byte[] invRotWord (byte[] word) {
 		byte temp;
 		temp = word[3];
-		for(int i = 1; i < 4; i++)
+		for(int i = 3; i > 0; i--)
 			word [i] = word[i-1];
 		word[0] = temp;
 		return word;
@@ -344,25 +362,13 @@ public class AES {
 			return 0;
 	} // mul
 
-	public static void main(String[] args) {
-
-		String key = "0000000000000000000000000000000000000000000000000000000000000000";
-		String plaintext = "00112233445566778899AABBCCDDEEFF";
-		String option = "e";
-
+	private static byte[] encrypt (byte[] state, byte[] expandedKey) {
 		int round = 0;
-
-		// Step 1: Key Expansions
-		byte[] expandedKey = keyExpansion(toByteArray(key));
-		//System.out.println(toHexString(expandedKey));
-
-		// Step 1.1: Move the plaintext to a byte array.
-		byte[] state = toByteArray(plaintext);
 
 		// Step 2: Initial Round
 		//   1. AddRoundKey
 		state =  addRoundkey(state, expandedKey, round);
-		
+
 		System.out.println("After addRoundKey(" + round + "):");
 		System.out.println(toHexString(state));
 
@@ -389,7 +395,7 @@ public class AES {
 			round++;
 		}
 		//System.out.println("Round: " + round);
-		
+
 		// Step 4: Final Round
 		//   1. SubBytes
 		//   2. ShiftRows
@@ -404,6 +410,104 @@ public class AES {
 		System.out.println("After addRoundKey(" + round + "):");
 		System.out.println(toHexString(state));
 
+		return state;
+	}
+
+	private static byte[] decrypt (byte[] state, byte[] expandedKey) {
+		int round = 14;
+
+		state =  addRoundkey(state, expandedKey, round);
+		System.out.println("After addRoundKey(" + round + "):");
+		System.out.println(toHexString(state));
+		state = invShiftRows(state);
+		System.out.println("After invShiftRows:");
+		System.out.println(toHexString(state));
+		state = invSubBytes(state);
+		System.out.println("After invSubBytes:");
+		System.out.println(toHexString(state));
+		round--;
+
+		while (round > 0) {
+			state = addRoundkey(state, expandedKey, round);
+			System.out.println("After addRoundKey(" + round + "):");
+			System.out.println(toHexString(state));
+			state = invMixColumns(state);
+			System.out.println("After invMixColumns:");
+			System.out.println(toHexString(state));
+			state = invShiftRows(state);
+			System.out.println("After invShiftRows:");
+			System.out.println(toHexString(state));
+			state = invSubBytes(state);
+			System.out.println("After invSubBytes:");
+			System.out.println(toHexString(state));
+			round--;
+		}
+
+		state = addRoundkey(state, expandedKey, round);
+		System.out.println("After addRoundKey(" + round + "):");
+		System.out.println(toHexString(state));
+
+		return state;
+	}
+
+	public static void main(String[] args) {
+
+		if (args.length != 3) {
+			System.err.println("Must have three arguments.");
+			return;
+		}
+
+		String mode, keyFileName, inputFileName;
+
+		mode = args[0];
+		keyFileName = args[1];
+		inputFileName = args[2];
+
+		try {
+			BufferedReader input = new BufferedReader(new FileReader(inputFileName));
+			BufferedReader key = new BufferedReader(new FileReader(keyFileName));
+			String inputLine, keyLine;
+
+			if ((keyLine = key.readLine()) != null) {
+				while ((inputLine = input.readLine()) != null) {
+
+					// Step 1: Key Expansions
+					byte[] expandedKey = keyExpansion(toByteArray(keyLine));
+					// Step 1.1: Move the input to a byte array.
+					byte[] state = toByteArray(inputLine);
+
+					if (mode.equals("e")) {
+						state = encrypt(state, expandedKey);
+					}
+					else if (mode.equals("d")) {
+						state = decrypt(state, expandedKey);
+					}
+					else {
+						System.err.println("Invalid option.");
+						break;
+					}
+				}
+			}
+			
+			input.close();
+			key.close();
+		}
+		catch (FileNotFoundException e) {
+			System.out.println( "Unable to open file '" + 
+					inputFileName + "' or '" + keyFileName + "'");  
+		}
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		//String key = "0000000000000000000000000000000000000000000000000000000000000000";
+		//String plaintext = "00112233445566778899AABBCCDDEEFF";
+		//String option = "e";
+
+		//state = encrypt(state, expandedKey);
+		//System.out.println("\n\n\n\nDECRYPTION STARTS HERE");
+		//state = decrypt(state, expandedKey);
 
 
 		/*		boolean DEBUG = false;
