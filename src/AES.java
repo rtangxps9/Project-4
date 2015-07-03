@@ -4,6 +4,7 @@ import javax.xml.bind.DatatypeConverter;
 
 public class AES {
 
+	// The round constant word array.
 	final static int RCON[] = {
 		0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 
 		0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 
@@ -22,6 +23,7 @@ public class AES {
 		0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 
 		0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d};
 
+	// S-box
 	final static int S[] = {
 		0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
 		0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
@@ -40,6 +42,7 @@ public class AES {
 		0xE1, 0xF8, 0x98, 0x11, 0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF,
 		0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16};
 
+	// Inverse S-box
 	final static int INV_S[] = {
 		0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,
 		0x7C, 0xE3, 0x39, 0x82, 0x9B, 0x2F, 0xFF, 0x87, 0x34, 0x8E, 0x43, 0x44, 0xC4, 0xDE, 0xE9, 0xCB,
@@ -58,20 +61,80 @@ public class AES {
 		0xA0, 0xE0, 0x3B, 0x4D, 0xAE, 0x2A, 0xF5, 0xB0, 0xC8, 0xEB, 0xBB, 0x3C, 0x83, 0x53, 0x99, 0x61,
 		0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D};
 
+	final static int[] LogTable = {
+		0,   0,  25,   1,  50,   2,  26, 198,  75, 199,  27, 104,  51, 238, 223,   3, 
+		100,   4, 224,  14,  52, 141, 129, 239,  76, 113,   8, 200, 248, 105,  28, 193, 
+		125, 194,  29, 181, 249, 185,  39, 106,  77, 228, 166, 114, 154, 201,   9, 120, 
+		101,  47, 138,   5,  33,  15, 225,  36,  18, 240, 130,  69,  53, 147, 218, 142, 
+		150, 143, 219, 189,  54, 208, 206, 148,  19,  92, 210, 241,  64,  70, 131,  56, 
+		102, 221, 253,  48, 191,   6, 139,  98, 179,  37, 226, 152,  34, 136, 145,  16, 
+		126, 110,  72, 195, 163, 182,  30,  66,  58, 107,  40,  84, 250, 133,  61, 186, 
+		43, 121,  10,  21, 155, 159,  94, 202,  78, 212, 172, 229, 243, 115, 167,  87, 
+		175,  88, 168,  80, 244, 234, 214, 116,  79, 174, 233, 213, 231, 230, 173, 232, 
+		44, 215, 117, 122, 235,  22,  11, 245,  89, 203,  95, 176, 156, 169,  81, 160, 
+		127,  12, 246, 111,  23, 196,  73, 236, 216,  67,  31,  45, 164, 118, 123, 183, 
+		204, 187,  62,  90, 251,  96, 177, 134,  59,  82, 161, 108, 170,  85,  41, 157, 
+		151, 178, 135, 144,  97, 190, 220, 252, 188, 149, 207, 205,  55,  63,  91, 209, 
+		83,  57, 132,  60,  65, 162, 109,  71,  20,  42, 158,  93,  86, 242, 211, 171, 
+		68,  17, 146, 217,  35,  32,  46, 137, 180, 124, 184,  38, 119, 153, 227, 165, 
+		103,  74, 237, 222, 197,  49, 254,  24,  13,  99, 140, 128, 192, 247, 112,   7};
+
+	final static int[] AlogTable = {
+		1,   3,   5,  15,  17,  51,  85, 255,  26,  46, 114, 150, 161, 248,  19,  53, 
+		95, 225,  56,  72, 216, 115, 149, 164, 247,   2,   6,  10,  30,  34, 102, 170, 
+		229,  52,  92, 228,  55,  89, 235,  38, 106, 190, 217, 112, 144, 171, 230,  49, 
+		83, 245,   4,  12,  20,  60,  68, 204,  79, 209, 104, 184, 211, 110, 178, 205, 
+		76, 212, 103, 169, 224,  59,  77, 215,  98, 166, 241,   8,  24,  40, 120, 136, 
+		131, 158, 185, 208, 107, 189, 220, 127, 129, 152, 179, 206,  73, 219, 118, 154, 
+		181, 196,  87, 249,  16,  48,  80, 240,  11,  29,  39, 105, 187, 214,  97, 163, 
+		254,  25,  43, 125, 135, 146, 173, 236,  47, 113, 147, 174, 233,  32,  96, 160, 
+		251,  22,  58,  78, 210, 109, 183, 194,  93, 231,  50,  86, 250,  21,  63,  65, 
+		195,  94, 226,  61,  71, 201,  64, 192,  91, 237,  44, 116, 156, 191, 218, 117, 
+		159, 186, 213, 100, 172, 239,  42, 126, 130, 157, 188, 223, 122, 142, 137, 128, 
+		155, 182, 193,  88, 232,  35, 101, 175, 234,  37, 111, 177, 200,  67, 197,  84, 
+		252,  31,  33,  99, 165, 244,   7,   9,  27,  45, 119, 153, 176, 203,  70, 202, 
+		69, 207,  74, 222, 121, 139, 134, 145, 168, 227,  62,  66, 198,  81, 243,  14, 
+		18,  54,  90, 238,  41, 123, 141, 140, 143, 138, 133, 148, 167, 242,  13,  23, 
+		57,  75, 221, 124, 132, 151, 162, 253,  28,  36, 108, 180, 199,  82, 246,   1};
+
 	final static int ROUNDS = 14; // Number of rounds to perform. AES-128 10 AES-192 12 AES-256 14
 	final static int COLUMNS = 4; // Number of columns comprising of the State.
 	final static int WORDS = 8;   // Number of 32-bit words comprising of the Cipher Key. AES-128 4 AES-192 6 AES-256 8
 
-	private static void subByte (byte value) {
-		// TODO
+	// Small function that takes the byte value and returns the corresponding S-box value.
+	private static byte subByte (byte value) {
+		return (byte) (S[value & 0x000000ff] & 0xff);
+	}
+
+	private static byte[] subBytes (byte[] state) {
+		byte[] sWord = new byte[4];
+		for(int i = 0; i < COLUMNS; i++) {
+			sWord = getWord(i, state, sWord);
+			sWord = subWord(sWord);
+			setWord(i, sWord, state);
+		}
+		return state;
 	}
 
 	private void invSubBytes () {
 		// TODO
 	}
-
-	private void shiftRows () {
-		// TODO
+	
+	private static byte[] getRow (int nthRow, byte[] source, byte[] result) {
+		for(int i = 0; i < COLUMNS; i++)
+			result[i] = source[nthRow + i * 4];
+		return result;
+	}
+	
+	private static byte[] setRow (int nthRow, byte[] row, byte[] destination) {
+		
+	}
+	
+	private static byte[] shiftRows (byte[] state) {
+		byte[] temp = new byte[4];
+		
+		
+		return state;
 	}
 
 	private void invShiftRows () {
@@ -86,10 +149,20 @@ public class AES {
 		// TODO
 	}
 
-	private void addRoundkey () {
-		// TODO
+	private static byte[] addRoundkey (byte[] state, byte[] key, int round) {
+		byte[] sWord = new byte[4];
+		byte[] kWord = new byte[4];
+		for (int i = 0; i < COLUMNS; i++) {
+			sWord = getWord(i, state, sWord);
+			kWord = getWord(i + round * COLUMNS, key, kWord);
+			setWord(i, xor(sWord, kWord), state);
+		}
+
+		return state;
 	}
 
+	// This method takes in the input key and creates a key schedule.
+	// The output is the expanded key.
 	private static byte[] keyExpansion (byte[] key) {
 		byte[] result = new byte[240];
 		byte[] word = new byte[4];
@@ -117,22 +190,16 @@ public class AES {
 
 		return result;
 	}
-	
-	private static byte[] xor (byte[] word1, byte[] word2) {
-		for (int i = 0; i < word1.length; i++) {
-			word1[i] = (byte) (word1[i] ^ word2[i]);
-		}
-		
-		return word1;
-	}
-	
+
+	// Takes a four byte word and applies S-box to each of the four bytes.
 	private static byte[] subWord (byte[] word) {
 		for(int i = 0; i < 4; i++) {
-			word[i] = (byte) (S[word[i] & 0x000000ff] & 0xff);
+			word[i] = subByte(word[i]);
 		}
 		return word;
 	}	
-	
+
+	// Takes a four byte word and performs a cyclic permutation.
 	private static byte[] rotWord (byte[] word) {
 		byte temp;
 		temp = word[0];
@@ -158,33 +225,74 @@ public class AES {
 		}
 		return result;
 	}
-	
+
+	// Utility Functions
+	// Converts byte array to hex string.
+	// Input:	byte[] array
+	// Output:	String (this is a hex string)
 	public static String toHexString (byte[] array) {
 		return DatatypeConverter.printHexBinary(array);
 	}
-	
+
+	// Converts hex string to byte array.
+	// Input:	String s (this is a hex string)
+	// Output:	byte[]
 	public static byte[] toByteArray (String s) {
 		return DatatypeConverter.parseHexBinary(s);
 	}
+
+	// XOR function that performs word1 ^ word2.
+	// Input:	byte[] word1, byte[] word2
+	// Output:	byte[] word1
+	private static byte[] xor (byte[] word1, byte[] word2) {
+		for (int i = 0; i < word1.length; i++) {
+			word1[i] = (byte) (word1[i] ^ word2[i]);
+		}
+
+		return word1;
+	}
+
+	private byte mul (int a, byte b) {
+		int inda = (a < 0) ? (a + 256) : a;
+		int indb = (b < 0) ? (b + 256) : b;
+
+		if ( (a != 0) && (b != 0) ) {
+			int index = (LogTable[inda] + LogTable[indb]);
+			byte val = (byte)(AlogTable[ index % 255 ] );
+			return val;
+		}
+		else 
+			return 0;
+	} // mul
 
 	public static void main(String[] args) {
 
 		String key = "0000000000000000000000000000000000000000000000000000000000000000";
 		String plaintext = "00112233445566778899AABBCCDDEEFF";
 		String option = "e";
-		
+
+		int round = 0;
+
 		// Step 1: Key Expansions
 		byte[] expandedKey = keyExpansion(toByteArray(key));
-		System.out.println(toHexString(expandedKey));
+		//System.out.println(toHexString(expandedKey));
+
+		// Step 1.1: Move the plaintext to a byte array.
+		byte[] state = toByteArray(plaintext);
 
 		// Step 2: Initial Round
 		//   1. AddRoundKey
+		state =  addRoundkey(state, expandedKey, round);
+		//System.out.println(toHexString(state));
+
 
 		// Step 3: Rounds
 		//   1. SubBytes
 		//   2. ShiftRows
 		//   3. MixColumns
 		//   4. AddRoundKey
+		state = subBytes(state);
+		//System.out.println(toHexString(state));
 
 		// Step 4: Final Round
 		//   1. SubBytes
