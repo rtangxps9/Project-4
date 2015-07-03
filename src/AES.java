@@ -127,12 +127,27 @@ public class AES {
 	}
 	
 	private static byte[] setRow (int nthRow, byte[] row, byte[] destination) {
+		for(int i = 0; i < COLUMNS; i++)
+			destination[nthRow + i * 4] = row[i];
+		return destination;
+	}
+	
+	private static byte[] shiftNRow (int nthShift, byte[] row) {
+		for(int i = 0; i < nthShift; i++) {
+			
+		}
 		
+		return row;
 	}
 	
 	private static byte[] shiftRows (byte[] state) {
 		byte[] temp = new byte[4];
-		
+		for(int i = 1; i < 4; i++) {
+			temp = getRow(i, state, temp);
+			for(int j = 0; j < i; j++)
+				temp = rotWord(temp);
+			setRow(i, temp, state);
+		}
 		
 		return state;
 	}
@@ -293,6 +308,9 @@ public class AES {
 		//   4. AddRoundKey
 		state = subBytes(state);
 		//System.out.println(toHexString(state));
+		state = shiftRows(state);
+		//System.out.println(toHexString(state));
+		
 
 		// Step 4: Final Round
 		//   1. SubBytes
