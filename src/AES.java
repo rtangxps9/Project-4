@@ -106,6 +106,11 @@ public class AES {
 		return (byte) (S[value & 0x000000ff] & 0xff);
 	}
 
+	//Inverse of subByte
+	private static byte invSubByte (byte value) {
+		return (byte) (INV_S[value & 0x000000ff] & 0xff);
+	}
+
 	private static byte[] subBytes (byte[] state) {
 		byte[] sWord = new byte[4];
 		for(int i = 0; i < COLUMNS; i++) {
@@ -116,8 +121,14 @@ public class AES {
 		return state;
 	}
 
-	private void invSubBytes () {
-		// TODO
+	private static byte[] invSubBytes (byte[] state) {
+		byte[] sWord = new byte[4];
+		for(int i = 0; i < COLUMNS; i++) {
+			sWord = getWord(i, state, sWord);
+			sWord = invSubWord(sWord);
+			setWord(i, sWord, state);
+		}
+		return state;
 	}
 
 	private static byte[] getRow (int nthRow, byte[] source, byte[] result) {
@@ -152,8 +163,16 @@ public class AES {
 		return state;
 	}
 
-	private void invShiftRows () {
-		// TODO
+	private static byte[] invShiftRows (byte[] state) {
+		byte[] temp = new byte[4];
+		for(int i = 1; i < 4; i++) {
+			temp = getRow(i, state, temp);
+			for(int j = 0; j < i; j++)
+				temp = invRotWord(temp);
+			setRow(i, temp, state);
+		}
+
+		return state;
 	}
 
 	private static byte[] mixColumns (byte[] state) {
@@ -172,6 +191,7 @@ public class AES {
 		// This is another alternate version of mixColumn, using the 
 		// logtables to do the computation.
 		byte[] temp = new byte[4];
+		System.out.println(temp[0]);
 
 		// This is exactly the same as mixColumns1, if 
 		// the mul columns somehow match the b columns there.
@@ -238,6 +258,14 @@ public class AES {
 			word[i] = subByte(word[i]);
 		}
 		return word;
+	}
+
+	// Takes a four byte word and returns each byte's location in the S-box
+	private static byte[] invSubWord (byte[] word) {
+		for(int i = 0;i < 4; i++) {
+			word[i] = invSubByte(word[i]);
+		}
+		return word;
 	}	
 
 	// Takes a four byte word and performs a cyclic permutation.
@@ -247,6 +275,16 @@ public class AES {
 		for(int i = 0; i < 3; i++)
 			word [i] = word[i+1];
 		word[3] = temp;
+		return word;
+	}
+
+	// Inverses the rotWord method
+	private static byte[] invRotWord (byte[] word) {
+		byte temp;
+		temp = word[3];
+		for(int i = 1; i < 4; i++)
+			word [i] = word[i-1];
+		word[0] = temp;
 		return word;
 	}
 
