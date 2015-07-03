@@ -1,7 +1,9 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
@@ -450,8 +452,7 @@ public class AES {
 		return state;
 	}
 
-	public static void main(String[] args) {
-
+	public static void main(String[] args) {		
 		if (args.length != 3) {
 			System.err.println("Must have three arguments.");
 			return;
@@ -460,6 +461,11 @@ public class AES {
 		String mode, keyFileName, inputFileName;
 
 		mode = args[0];
+		if (!(mode.equals("e")) && !(mode.equals("d"))) {
+			System.err.println("Invalid option.");
+			return;
+		}
+		
 		keyFileName = args[1];
 		inputFileName = args[2];
 
@@ -468,27 +474,42 @@ public class AES {
 			BufferedReader key = new BufferedReader(new FileReader(keyFileName));
 			String inputLine, keyLine;
 
-			if ((keyLine = key.readLine()) != null) {
+			if ((keyLine = key.readLine()) == null) {
+				System.err.println("Empty key file.");
+			}
+			else {
+				// Step 1: Key Expansions
+				byte[] expandedKey = keyExpansion(toByteArray(keyLine));
+				
+				File output = new File (inputFileName + "." + ((mode.equals("e")) ? "enc" : "dec"));
+				
+				if (!output.exists()) {
+					output.createNewFile();
+				}
+				
+				FileWriter fw = new FileWriter(output.getAbsoluteFile());
+				BufferedWriter bw = new BufferedWriter(fw);
+				
 				while ((inputLine = input.readLine()) != null) {
-
-					// Step 1: Key Expansions
-					byte[] expandedKey = keyExpansion(toByteArray(keyLine));
 					// Step 1.1: Move the input to a byte array.
-					byte[] state = toByteArray(inputLine);
-
-					if (mode.equals("e")) {
-						state = encrypt(state, expandedKey);
+					try {
+						byte[] state = toByteArray(inputLine);
+						if (mode.equals("e")) {
+							state = encrypt(state, expandedKey);
+						}
+						else {
+							state = decrypt(state, expandedKey);
+						}
+						bw.write(toHexString(state) + "\n");
 					}
-					else if (mode.equals("d")) {
-						state = decrypt(state, expandedKey);
-					}
-					else {
-						System.err.println("Invalid option.");
-						break;
+					catch (IllegalArgumentException e) {
+						System.err.println("ERROR: Input line contains illegal character.");
+						continue;
 					}
 				}
+				bw.close();
 			}
-			
+
 			input.close();
 			key.close();
 		}
@@ -497,10 +518,10 @@ public class AES {
 					inputFileName + "' or '" + keyFileName + "'");  
 		}
 		catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println( "Error reading file '" +
+					inputFileName + "' or '" + keyFileName + "'");
 		}
-		
+
 		//String key = "0000000000000000000000000000000000000000000000000000000000000000";
 		//String plaintext = "00112233445566778899AABBCCDDEEFF";
 		//String option = "e";
