@@ -1,6 +1,6 @@
 import java.io.File;
 import java.nio.charset.Charset;
-
+import javax.xml.bind.DatatypeConverter;
 
 public class AES {
 
@@ -62,8 +62,8 @@ public class AES {
 	final static int COLUMNS = 4; // Number of columns comprising of the State.
 	final static int WORDS = 8;   // Number of 32-bit words comprising of the Cipher Key. AES-128 4 AES-192 6 AES-256 8
 
-	private static int subByte (byte value) {
-		return S[value];
+	private static void subByte (byte value) {
+		// TODO
 	}
 
 	private void invSubBytes () {
@@ -106,7 +106,7 @@ public class AES {
 			getWord(i - 1, result, word);
 			if (i % WORDS == 0) {
 				word = subWord(rotWord(word));
-				word[0] = (byte) (word[0] ^ (RCON[i/WORDS] & 0xFF));
+				word[0] = (byte) (word[0] ^ (RCON[i/WORDS] & 0xff));
 			}
 			else if (WORDS > 6 && i % WORDS == 4)
 				word = subWord(word);
@@ -119,7 +119,7 @@ public class AES {
 	}
 	
 	private static byte[] xor (byte[] word1, byte[] word2) {
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < word1.length; i++) {
 			word1[i] = (byte) (word1[i] ^ word2[i]);
 		}
 		
@@ -159,15 +159,12 @@ public class AES {
 		return result;
 	}
 	
-	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
-	public static String bytesToHex(byte[] bytes) {
-	    char[] hexChars = new char[bytes.length * 2];
-	    for ( int j = 0; j < bytes.length; j++ ) {
-	        int v = bytes[j] & 0xFF;
-	        hexChars[j * 2] = hexArray[v >>> 4];
-	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-	    }
-	    return new String(hexChars);
+	public static String toHexString (byte[] array) {
+		return DatatypeConverter.printHexBinary(array);
+	}
+	
+	public static byte[] toByteArray (String s) {
+		return DatatypeConverter.parseHexBinary(s);
 	}
 
 	public static void main(String[] args) {
@@ -175,10 +172,10 @@ public class AES {
 		String key = "0000000000000000000000000000000000000000000000000000000000000000";
 		String plaintext = "00112233445566778899AABBCCDDEEFF";
 		String option = "e";
-
+		
 		// Step 1: Key Expansions
-		byte[] expandedKey = keyExpansion(key.getBytes());
-		System.out.println(bytesToHex(expandedKey));
+		byte[] expandedKey = keyExpansion(toByteArray(key));
+		System.out.println(toHexString(expandedKey));
 
 		// Step 2: Initial Round
 		//   1. AddRoundKey
