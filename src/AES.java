@@ -119,27 +119,27 @@ public class AES {
 	private void invSubBytes () {
 		// TODO
 	}
-	
+
 	private static byte[] getRow (int nthRow, byte[] source, byte[] result) {
 		for(int i = 0; i < COLUMNS; i++)
 			result[i] = source[nthRow + i * 4];
 		return result;
 	}
-	
+
 	private static byte[] setRow (int nthRow, byte[] row, byte[] destination) {
 		for(int i = 0; i < COLUMNS; i++)
 			destination[nthRow + i * 4] = row[i];
 		return destination;
 	}
-	
+
 	private static byte[] shiftNRow (int nthShift, byte[] row) {
 		for(int i = 0; i < nthShift; i++) {
-			
+
 		}
-		
+
 		return row;
 	}
-	
+
 	private static byte[] shiftRows (byte[] state) {
 		byte[] temp = new byte[4];
 		for(int i = 1; i < 4; i++) {
@@ -148,7 +148,7 @@ public class AES {
 				temp = rotWord(temp);
 			setRow(i, temp, state);
 		}
-		
+
 		return state;
 	}
 
@@ -156,9 +156,35 @@ public class AES {
 		// TODO
 	}
 
-	private void mixColumns () {
-		// TODO
+	private static byte[] mixColumns (byte[] state) {
+		byte[] temp = new byte[4];
+
+		for (int i = 0; i < COLUMNS; i++) {
+			temp = getWord(i, state, temp);
+			temp = mixColumn2(i, temp);
+			setWord(i, temp, state);
+		}
+
+		return state;
 	}
+
+	private static byte[] mixColumn2 (int c, byte[] word) {
+		// This is another alternate version of mixColumn, using the 
+		// logtables to do the computation.
+		byte[] temp = new byte[4];
+
+		// This is exactly the same as mixColumns1, if 
+		// the mul columns somehow match the b columns there.
+		temp[0] = (byte)(mul(2,word[0]) ^ word[2] ^ word[3] ^ mul(3,word[1]));
+		temp[1] = (byte)(mul(2,word[1]) ^ word[3] ^ word[0] ^ mul(3,word[2]));
+		temp[2] = (byte)(mul(2,word[2]) ^ word[0] ^ word[1] ^ mul(3,word[3]));
+		temp[3] = (byte)(mul(2,word[3]) ^ word[1] ^ word[2] ^ mul(3,word[0]));
+
+		for (int i = 0; i < 4; i++) {
+			word[i] = temp[i];
+		}
+		return word;
+	} // mixColumn2
 
 	private void invMixColumns () {
 		// TODO
@@ -267,7 +293,7 @@ public class AES {
 		return word1;
 	}
 
-	private byte mul (int a, byte b) {
+	private static byte mul (int a, byte b) {
 		int inda = (a < 0) ? (a + 256) : a;
 		int indb = (b < 0) ? (b + 256) : b;
 
@@ -298,7 +324,9 @@ public class AES {
 		// Step 2: Initial Round
 		//   1. AddRoundKey
 		state =  addRoundkey(state, expandedKey, round);
-		//System.out.println(toHexString(state));
+		
+		System.out.println("After addRoundKey(" + round + "):");
+		System.out.println(toHexString(state));
 
 
 		// Step 3: Rounds
@@ -306,18 +334,37 @@ public class AES {
 		//   2. ShiftRows
 		//   3. MixColumns
 		//   4. AddRoundKey
-		state = subBytes(state);
-		//System.out.println(toHexString(state));
-		state = shiftRows(state);
-		//System.out.println(toHexString(state));
+		round++;
+		while (round < ROUNDS) {
+			state = subBytes(state);
+			System.out.println("After subBytes:");
+			System.out.println(toHexString(state));
+			state = shiftRows(state);
+			System.out.println("After shiftRows:");
+			System.out.println(toHexString(state));
+			state = mixColumns(state);
+			System.out.println("After mixColumns:");
+			System.out.println(toHexString(state));
+			state = addRoundkey(state, expandedKey, round);
+			System.out.println("After addRoundKey(" + round + "):");
+			System.out.println(toHexString(state));
+			round++;
+		}
+		//System.out.println("Round: " + round);
 		
-
 		// Step 4: Final Round
 		//   1. SubBytes
 		//   2. ShiftRows
 		//   3. AddRoundKey
-
-
+		state = subBytes(state);
+		System.out.println("After subBytes:");
+		System.out.println(toHexString(state));
+		state = shiftRows(state);
+		System.out.println("After shiftRows:");
+		System.out.println(toHexString(state));
+		state = addRoundkey(state, expandedKey, round);
+		System.out.println("After addRoundKey(" + round + "):");
+		System.out.println(toHexString(state));
 
 
 
