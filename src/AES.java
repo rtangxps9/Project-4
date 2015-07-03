@@ -471,6 +471,17 @@ public class AES {
 			if ((keyLine = key.readLine()) != null) {
 				while ((inputLine = input.readLine()) != null) {
 
+					if(inputLine.length() > 32)
+						inputLine = inputLine.substring(0,32);
+					else if(inputLine.length() == 32)
+						inputLine = inputLine;
+					else {
+						int remaining = 32 - inputLine.length();
+						String toAdd = "";
+						for(int i = 0;i<remaining;i++)
+							toAdd += '0';
+						inputLine += toAdd;
+					}
 					// Step 1: Key Expansions
 					byte[] expandedKey = keyExpansion(toByteArray(keyLine));
 					// Step 1.1: Move the input to a byte array.
