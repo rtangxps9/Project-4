@@ -371,8 +371,8 @@ public class AES {
 		//   1. AddRoundKey
 		state =  addRoundkey(state, expandedKey, round);
 
-		System.out.println("After addRoundKey(" + round + "):");
-		System.out.println(toHexString(state));
+		//System.out.println("After addRoundKey(" + round + "):");
+		//System.out.println(toHexString(state));
 
 
 		// Step 3: Rounds
@@ -383,17 +383,17 @@ public class AES {
 		round++;
 		while (round < ROUNDS) {
 			state = subBytes(state);
-			System.out.println("After subBytes:");
-			System.out.println(toHexString(state));
+			//System.out.println("After subBytes:");
+			//System.out.println(toHexString(state));
 			state = shiftRows(state);
-			System.out.println("After shiftRows:");
-			System.out.println(toHexString(state));
+			//System.out.println("After shiftRows:");
+			//System.out.println(toHexString(state));
 			state = mixColumns(state);
-			System.out.println("After mixColumns:");
-			System.out.println(toHexString(state));
+			//System.out.println("After mixColumns:");
+			//System.out.println(toHexString(state));
 			state = addRoundkey(state, expandedKey, round);
-			System.out.println("After addRoundKey(" + round + "):");
-			System.out.println(toHexString(state));
+			//System.out.println("After addRoundKey(" + round + "):");
+			//System.out.println(toHexString(state));
 			round++;
 		}
 		//System.out.println("Round: " + round);
@@ -403,14 +403,14 @@ public class AES {
 		//   2. ShiftRows
 		//   3. AddRoundKey
 		state = subBytes(state);
-		System.out.println("After subBytes:");
-		System.out.println(toHexString(state));
+		//System.out.println("After subBytes:");
+		//System.out.println(toHexString(state));
 		state = shiftRows(state);
-		System.out.println("After shiftRows:");
-		System.out.println(toHexString(state));
+		//System.out.println("After shiftRows:");
+		//System.out.println(toHexString(state));
 		state = addRoundkey(state, expandedKey, round);
-		System.out.println("After addRoundKey(" + round + "):");
-		System.out.println(toHexString(state));
+		//System.out.println("After addRoundKey(" + round + "):");
+		//System.out.println(toHexString(state));
 
 		return state;
 	}
@@ -419,35 +419,35 @@ public class AES {
 		int round = 14;
 
 		state =  addRoundkey(state, expandedKey, round);
-		System.out.println("After addRoundKey(" + round + "):");
-		System.out.println(toHexString(state));
+		//System.out.println("After addRoundKey(" + round + "):");
+		//System.out.println(toHexString(state));
 		state = invShiftRows(state);
-		System.out.println("After invShiftRows:");
-		System.out.println(toHexString(state));
+		//System.out.println("After invShiftRows:");
+		//System.out.println(toHexString(state));
 		state = invSubBytes(state);
-		System.out.println("After invSubBytes:");
-		System.out.println(toHexString(state));
+		//System.out.println("After invSubBytes:");
+		//System.out.println(toHexString(state));
 		round--;
 
 		while (round > 0) {
 			state = addRoundkey(state, expandedKey, round);
-			System.out.println("After addRoundKey(" + round + "):");
-			System.out.println(toHexString(state));
+			//System.out.println("After addRoundKey(" + round + "):");
+			//System.out.println(toHexString(state));
 			state = invMixColumns(state);
-			System.out.println("After invMixColumns:");
-			System.out.println(toHexString(state));
+			//System.out.println("After invMixColumns:");
+			//System.out.println(toHexString(state));
 			state = invShiftRows(state);
-			System.out.println("After invShiftRows:");
-			System.out.println(toHexString(state));
+			//System.out.println("After invShiftRows:");
+			//System.out.println(toHexString(state));
 			state = invSubBytes(state);
-			System.out.println("After invSubBytes:");
-			System.out.println(toHexString(state));
+			//System.out.println("After invSubBytes:");
+			//System.out.println(toHexString(state));
 			round--;
 		}
 
 		state = addRoundkey(state, expandedKey, round);
-		System.out.println("After addRoundKey(" + round + "):");
-		System.out.println(toHexString(state));
+		//System.out.println("After addRoundKey(" + round + "):");
+		//System.out.println(toHexString(state));
 
 		return state;
 	}
@@ -459,6 +459,7 @@ public class AES {
 		}
 
 		String mode, keyFileName, inputFileName;
+		long startTime, endTime;
 
 		mode = args[0];
 		if (!(mode.equals("e")) && !(mode.equals("d"))) {
@@ -490,6 +491,7 @@ public class AES {
 				FileWriter fw = new FileWriter(output.getAbsoluteFile());
 				BufferedWriter bw = new BufferedWriter(fw);
 				
+				startTime = System.nanoTime();
 				while ((inputLine = input.readLine()) != null) {
 					if(inputLine.length() > 32)
 						inputLine = inputLine.substring(0,32);
@@ -518,6 +520,12 @@ public class AES {
 						continue;
 					}
 				}
+				endTime = System.nanoTime();
+				long filesize = (new File("plaintext")).length();
+				long bandwidth = (filesize) / ((endTime - startTime) / 1000000);
+				System.out.println(bandwidth + "bytes/ms");
+				bandwidth = bandwidth * 8 / 1000;
+				System.out.println(bandwidth + "MB/s");
 				bw.close();
 			}
 
@@ -532,6 +540,8 @@ public class AES {
 			System.out.println( "Error reading file '" +
 					inputFileName + "' or '" + keyFileName + "'");
 		}
+		
+		
 
 		//String key = "0000000000000000000000000000000000000000000000000000000000000000";
 		//String plaintext = "00112233445566778899AABBCCDDEEFF";
