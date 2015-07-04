@@ -521,11 +521,13 @@ public class AES {
 					}
 				}
 				endTime = System.nanoTime();
-				long filesize = (new File("plaintext")).length();
-				long bandwidth = (filesize) / ((endTime - startTime) / 1000000);
-				System.out.println(bandwidth + "bytes/ms");
+				double difference = endTime - startTime;
+				double newDiff = difference / 1000000;
+				long filesize = (new File(inputFileName)).length();
+				double bandwidth = (filesize) / difference;
+				System.out.println(bandwidth + " bytes/ms");
 				bandwidth = bandwidth * 8 / 1000;
-				System.out.println(bandwidth + "MB/s");
+				System.out.println(bandwidth + " MB/s");
 				bw.close();
 			}
 
